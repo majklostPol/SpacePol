@@ -14,12 +14,16 @@ Servo motor_right;
 
 #define FOR_LEFT 110
 #define FOR_RIGHT 70
+#define BACK_LEFT 70
+#define BACK_RIGHT 100
 
 #define FALL 0x00
 #define MOVE 0x01
 #define WAIT 0X03
 
 int state = WAIT;
+
+//right site movement
 
 
 /**** HC-12 serial port ****/
@@ -80,7 +84,7 @@ void setup()
   mpu.setFilterBandwidth(MPU6050_BAND_5_HZ);
 
   //setup acc
-  getAccData(&corr_x, &corr_y, &corr_z);
+  //getAccData(&corr_x, &corr_y, &corr_z);
 
   //servo
   motor_left.attach(MOTOR_LEFT);
@@ -98,13 +102,13 @@ void loop()
 
   readBME(&temp, &pressure);
 
-  Serial.print("Temperature = ");
+  /*Serial.print("Temperature = ");
   Serial.print(temp);
   Serial.println(" *C");
    
   Serial.print("Pressure = ");
   Serial.print(pressure);
-  Serial.println(" Pa");
+  Serial.println(" Pa");*/
 
 
   float acc_x, acc_y, acc_z = 0;
@@ -124,21 +128,21 @@ void loop()
   
   getGyroData(&g_x, &g_y, &g_z);
 
-  Serial.print("Rotation X: ");
+  /*Serial.print("Rotation X: ");
   Serial.print(g_x);
   Serial.print(", Y: ");
   Serial.print(g_y);
   Serial.print(", Z: ");
   Serial.print(g_z);
-  Serial.println(" rad/s");
+  Serial.println(" rad/s");*/
 
   float acc_temp = 0;
   
   getAccTemp(&acc_temp);
 
-  Serial.print("Temperature: ");
+  /*Serial.print("Temperature: ");
   Serial.print(acc_temp);
-  Serial.println(" degC");
+  Serial.println(" degC");*/
 
   if(state == FALL){
 
@@ -207,12 +211,31 @@ void getAccTemp(float* _temp){
 }
 
 void motorOn(){
-  
+
+  //otočení na správnou stranu pomocí osy z acc
+
   motor_left.attach(MOTOR_LEFT);
   motor_right.attach(MOTOR_RIGHT);
 
-  motor_left.write(FOR_LEFT);
-  motor_right.write(FOR_RIGHT);
+  float x, y, z = 0;
+
+  getAccData(&x, &y, &z);
+
+  if(z >= 0){
+
+    motor_left.write(FOR_LEFT);
+    motor_right.write(FOR_RIGHT);
+    
+  }else {
+
+    motor_left.write(BACK_LEFT);
+    motor_right.write(BACK_RIGHT);
+    
+  }
+  
+  
+
+
   
 }
 
