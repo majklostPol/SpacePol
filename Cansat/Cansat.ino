@@ -4,6 +4,22 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BMP280.h>
 #include <Adafruit_MPU6050.h>
+#include <ESP32Servo.h>
+
+#define MOTOR_LEFT 4
+#define MOTOR_RIGHT 5
+
+Servo motor_left;
+Servo motor_right;
+
+#define FOR_LEFT 110
+#define FOR_RIGHT 70
+
+#define FALL 0x00
+#define MOVE 0x01
+#define WAIT 0X03
+
+int state = WAIT;
 
 
 /**** HC-12 serial port ****/
@@ -21,6 +37,9 @@ float pressure = 0;
 
 /**** AKCELEROMETR ****/
 Adafruit_MPU6050 mpu;
+float corr_x = 0;
+float corr_y = 0; 
+float corr_z = 0;
 
 
 
@@ -30,6 +49,11 @@ void readBME(float *_temp, float *_press);    //read bme data
 void getAccData(float* _x, float* _y, float* _z);   //read acceleration
 void getGyroData(float* _x, float* _y, float* _z);  //read rotation
 void getAccTemp(float* _temp);  //read acc. temp
+void motorOn();
+void motorOff();
+void updateState();
+bool isTimeMove();
+void sendToServer();
 
 
 void setup() 
@@ -52,6 +76,14 @@ void setup()
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);   //set accelerometer
   mpu.setGyroRange(MPU6050_RANGE_500_DEG);
   mpu.setFilterBandwidth(MPU6050_BAND_5_HZ);
+
+  //setup acc
+  getAccData(&corr_x, &corr_y, &corr_z);
+
+  //servo
+  motor_left.attach(MOTOR_LEFT);
+  motor_right.attach(MOTOR_RIGHT);
+  motorOff();
   
   Serial.write("INIT DONE");}
 
@@ -60,13 +92,7 @@ void loop()
 {
 
 
-  /*while (HC12.available()) 
-  {        
-    // If HC-12 has data
-    Serial.write(HC12.read());
-    // Send the data to Serial monitor
-    
-  }*/
+  
 
   readBME(&temp, &pressure);
 
@@ -112,6 +138,17 @@ void loop()
   Serial.print(acc_temp);
   Serial.println(" degC");
 
+  if(state == FALL){
+
+    String _data = String(temp) + " " + String(pressure);
+    sendData(_data);
+    
+  }else if(state == MOVE){
+
+    
+    
+  }
+
   delay(2000);
   
 }
@@ -134,9 +171,9 @@ void getAccData(float* _x, float* _y, float* _z){
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);;
 
-  *_x = a.acceleration.x;
-  *_y = a.acceleration.y;
-  *_z = a.acceleration.z;
+  *_x = a.acceleration.x - corr_x;
+  *_y = a.acceleration.y - corr_y;
+  *_z = a.acceleration.z - corr_z;
   
 }
 
@@ -159,4 +196,47 @@ void getAccTemp(float* _temp){
   *_temp = t.temperature;
 
 }
+
+void motorOn(){
+  
+  motor_left.attach(MOTOR_LEFT);
+  motor_right.attach(MOTOR_RIGHT);
+
+  motor_left.write(FOR_LEFT);
+  motor_right.write(FOR_RIGHT);
+  
+}
+
+void motorOff(){
+  
+  motor_left.detach();
+  motor_right.detach();
+    
+}
+
+void updateState(){
+
+  if(isTimeMove() == true){
+    
+      state = MOVE;
+    
+    }else{
+
+      state = FALL;
+      
+    }
+    
+}
+bool isTimeMove(){
+
+  //get request -> time to move
+  
+}
+
+void sendToServer(){
+
+  //send data to database
+  
+}
+
 
