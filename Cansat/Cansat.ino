@@ -55,6 +55,8 @@ void updateState();
 bool isTimeMove();
 void sendToServer();
 
+bool motor_run = false;
+
 
 void setup() 
 {
@@ -145,7 +147,14 @@ void loop()
     
   }else if(state == MOVE){
 
-    
+    if(motor_run == false){
+
+      motorOn();
+      motor_run = true;
+      
+    }
+
+    sendToServer();
     
   }
 
